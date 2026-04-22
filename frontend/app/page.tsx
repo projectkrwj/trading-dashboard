@@ -40,13 +40,13 @@ export default function HomePage() {
     flex: 1,
     padding: "24px",
     borderRadius: "16px",
-    background: "#1e293b",
+    background: "#1c1c1e",
     color: "#f8fafc",
     boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
   };
 
   return (
-    <main style={{ padding: "40px", background: "#0f172a", minHeight: "100vh" }}>
+    <main style={{ padding: "40px", background: "#0b0b0f", minHeight: "100vh" }}>
       <div
         style={{
           display: "flex",
@@ -137,25 +137,44 @@ export default function HomePage() {
           height: 400,
           padding: "24px",
           borderRadius: "16px",
-          background: "#1e293b",
-          boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
+          background: "#1c1c1e", // iOS 카드 색
+          boxShadow: "0 8px 20px rgba(0,0,0,0.3)",
         }}
-      >
-        <ResponsiveContainer>
-          <LineChart data={data}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="date" />
-            <YAxis />
-            <Tooltip
-              contentStyle={{
-              backgroundColor: "#1e293b",
-              color: "#f8fafc",
-              }}
-            />
-            <Line type="monotone" dataKey="total_asset" stroke="#3b82f6" strokeWidth={3} />
-          </LineChart>
-        </ResponsiveContainer>
-      </div>
+    >
+      <ResponsiveContainer>
+        <LineChart data={data}>
+          <CartesianGrid stroke="#2c2c2e" strokeDasharray="3 3" />
+          
+          <XAxis 
+            dataKey="date" 
+            stroke="#8e8e93"   // iOS 회색 텍스트
+          />
+          
+          <YAxis 
+            stroke="#8e8e93"
+          />
+
+          <Tooltip
+            contentStyle={{
+              backgroundColor: "rgba(28, 28, 30, 0.9)",
+              border: "1px solid #3a3a3c",
+              borderRadius: "12px",
+              color: "#f5f5f7",
+            }}
+            labelStyle={{ color: "#f5f5f7" }}
+          />
+
+          <Line 
+            type="monotone" 
+            dataKey="total_asset" 
+            stroke="#0a84ff"   // iOS 블루
+            strokeWidth={3}
+            dot={false}        // 애플 느낌 (점 제거)
+            activeDot={{ r: 5 }}
+          />
+        </LineChart>
+      </ResponsiveContainer>
+    </div>
     </main>
   );
 }
