@@ -3,66 +3,55 @@
 import { useState } from "react";
 
 type Trade = {
-  entry: number;
-  exit: number;
-  risk: number;
-  size: number;
-  setup: string;
-  note: string;
+  side: "long" | "short";
+  capital: number | "";
+  riskPercent: number | "";
+  entry: number | "";
+  stop: number | "";
+  leverage: number;
 };
 
 export default function TradePage() {
   const [trade, setTrade] = useState<Trade>({
-    entry: 0,
-    exit: 0,
-    risk: 0,
-    size: 0,
-    setup: "",
-    note: "",
+    side: "long",
+    capital: "",
+    riskPercent: "",
+    entry: "",
+    stop: "",
+    leverage: 1,
   });
-
-  const [r, setR] = useState<number | null>(null);
 
   const handleChange = (field: keyof Trade, value: string) => {
     setTrade({
       ...trade,
-      [field]:
-        field === "setup" || field === "note"
-          ? value
-          : Number(value),
+      [field]: value === "" ? "" : Number(value),
     });
   };
 
-  const calculateR = () => {
-    const pnl = (trade.exit - trade.entry) * trade.size;
-    if (trade.risk === 0) return;
-    setR(pnl / trade.risk);
+  // 🔥 포지션 계산
+  const calculatePosition = () => {
+    if (
+      trade.capital === "" ||
+      trade.riskPercent === "" ||
+      trade.entry === "" ||
+      trade.stop === ""
+    )
+      return null;
+
+    const riskAmount = trade.capital * (trade.riskPercent / 100);
+    const stopDistance = Math.abs(trade.entry - trade.stop);
+
+    if (stopDistance === 0) return null;
+
+    const size = riskAmount / stopDistance;
+
+    return {
+      size,
+      riskAmount,
+    };
   };
 
-  const saveTrade = () => {
-    const saved = localStorage.getItem("trades");
-    const trades = saved ? JSON.parse(saved) : [];
-
-    trades.push({
-      ...trade,
-      r,
-      date: new Date().toISOString(),
-    });
-
-    localStorage.setItem("trades", JSON.stringify(trades));
-
-    alert("Trade saved");
-
-    setTrade({
-      entry: 0,
-      exit: 0,
-      risk: 0,
-      size: 0,
-      setup: "",
-      note: "",
-    });
-    setR(null);
-  };
+  const result = calculatePosition();
 
   const inputStyle: React.CSSProperties = {
     width: "100%",
@@ -87,8 +76,75 @@ export default function TradePage() {
     <main style={{ padding: "40px", background: "#0b0b0f", minHeight: "100vh" }}>
       <div className="dashboard-card" style={cardStyle}>
         <h2 style={{ fontSize: "20px", marginBottom: "20px" }}>
-          Add Trade
+          Position Calculator
         </h2>
+
+        {/* 방향 */}
+        <div style={{ display: "flex", gap: "10px", marginBottom: "12px" }}>
+          <button
+            onClick={() => setTrade({ ...trade, side: "long" })}
+            style={{
+              flex: 1,
+              padding: "10px",
+              background: trade.side === "long" ? "#16a34a" : "#334155",
+              color: "white",
+              border: "none",
+              borderRadius: "8px",
+            }}
+          >
+            Long
+          </button>
+
+          <button
+            onClick={() => setTrade({ ...trade, side: "short" })}
+            style={{
+              flex: 1,
+              padding: "10px",
+              background: trade.side === "short" ? "#ef4444" : "#334155",
+              color: "white",
+              border: "none",
+              borderRadius: "8px",
+            }}
+          >
+            Short
+          </button>
+        </div>
+
+        {/* 레버리지 */}
+        <div style={{ marginBottom: "16px" }}>
+          <div style={{ fontSize: "13px", color: "#94a3b8" }}>
+            Leverage
+          </div>
+          <input
+            type="range"
+            min={1}
+            max={125}
+            value={trade.leverage}
+            onChange={(e) =>
+              setTrade({ ...trade, leverage: Number(e.target.value) })
+            }
+            style={{ width: "100%" }}
+          />
+          <div style={{ textAlign: "right" }}>{trade.leverage}x</div>
+        </div>
+
+        {/* 계좌 */}
+        <input
+          type="number"
+          placeholder="Capital ($)"
+          value={trade.capital}
+          onChange={(e) => handleChange("capital", e.target.value)}
+          style={inputStyle}
+        />
+
+        {/* 리스크 % */}
+        <input
+          type="number"
+          placeholder="Risk % (예: 1)"
+          value={trade.riskPercent}
+          onChange={(e) => handleChange("riskPercent", e.target.value)}
+          style={{ ...inputStyle, marginTop: "10px" }}
+        />
 
         {/* Entry */}
         <input
@@ -96,103 +152,29 @@ export default function TradePage() {
           placeholder="Entry Price"
           value={trade.entry}
           onChange={(e) => handleChange("entry", e.target.value)}
-          style={inputStyle}
+          style={{ ...inputStyle, marginTop: "10px" }}
         />
 
-        {/* Exit */}
+        {/* Stop */}
         <input
           type="number"
-          placeholder="Exit Price"
-          value={trade.exit}
-          onChange={(e) => handleChange("exit", e.target.value)}
+          placeholder="Stop Price (손절가)"
+          value={trade.stop}
+          onChange={(e) => handleChange("stop", e.target.value)}
           style={{ ...inputStyle, marginTop: "10px" }}
         />
 
-        {/* Size */}
-        <input
-          type="number"
-          placeholder="Position Size"
-          value={trade.size}
-          onChange={(e) => handleChange("size", e.target.value)}
-          style={{ ...inputStyle, marginTop: "10px" }}
-        />
-
-        {/* Risk */}
-        <input
-          type="number"
-          placeholder="Risk ($)"
-          value={trade.risk}
-          onChange={(e) => handleChange("risk", e.target.value)}
-          style={{ ...inputStyle, marginTop: "10px" }}
-        />
-
-        {/* Setup */}
-        <input
-          type="text"
-          placeholder="Setup (e.g. breakout)"
-          value={trade.setup}
-          onChange={(e) => handleChange("setup", e.target.value)}
-          style={{ ...inputStyle, marginTop: "10px" }}
-        />
-
-        {/* Note */}
-        <textarea
-          placeholder="Note"
-          value={trade.note}
-          onChange={(e) => handleChange("note", e.target.value)}
-          style={{ ...inputStyle, marginTop: "10px", height: "80px" }}
-        />
-
-        {/* Calculate */}
-        <button
-          onClick={calculateR}
-          style={{
-            marginTop: "16px",
-            width: "100%",
-            padding: "10px",
-            borderRadius: "8px",
-            border: "none",
-            background: "#3b82f6",
-            color: "white",
-            fontWeight: "bold",
-            cursor: "pointer",
-          }}
-        >
-          Calculate R
-        </button>
-
-        {/* Result */}
-        {r !== null && (
-          <div
-            style={{
-              marginTop: "16px",
-              fontSize: "18px",
-              fontWeight: "bold",
-              color: r >= 0 ? "#16a34a" : "#ef4444",
-            }}
-          >
-            R: {r.toFixed(2)}
+        {/* 결과 */}
+        {result && (
+          <div style={{ marginTop: "20px" }}>
+            <div>
+              Position Size: <b>{result.size.toFixed(4)}</b>
+            </div>
+            <div>
+              Risk Amount: <b>${result.riskAmount.toFixed(2)}</b>
+            </div>
           </div>
         )}
-
-        {/* Save */}
-        <button
-          onClick={saveTrade}
-          disabled={r === null}
-          style={{
-            marginTop: "12px",
-            width: "100%",
-            padding: "10px",
-            borderRadius: "8px",
-            border: "none",
-            background: r !== null ? "#16a34a" : "#334155",
-            color: "white",
-            fontWeight: "bold",
-            cursor: "pointer",
-          }}
-        >
-          Save Trade
-        </button>
       </div>
     </main>
   );
